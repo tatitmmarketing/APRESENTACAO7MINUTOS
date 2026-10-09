@@ -1,5 +1,6 @@
 import streamlit as st
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from pptx import Presentation
 from pptx.util import Inches, Pt
 from pptx.dml.color import RGBColor
@@ -8,166 +9,189 @@ import io
 # Configuração da página Streamlit
 st.set_page_config(
     page_title="7 Minutos Apresentação — By Tatiana Moreira",
-    page_icon="🍊",
+    page_icon="⚡",
     layout="centered"
 )
 
-# Estilização visual CSS Premium - Montserrat & Paleta Laranja
+# Estilização visual inspirada no Gamma.app (Dark, Glassmorphism, Glow Laranja)
 st.markdown("""
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
 
     <style>
+    /* Fundo escuro estilo Gamma.app */
     html, body, [class*="css"], .stApp {
         font-family: 'Montserrat', sans-serif !important;
-        background-color: #F4F6F9;
-        color: #1E2229;
+        background-color: #0B0C10 !important;
+        color: #F0F2F5 !important;
     }
 
     header[data-testid="stHeader"] {
         background-color: transparent !important;
     }
 
-    .hero-banner {
-        background: linear-gradient(135deg, #111319 0%, #1A1E29 100%);
-        border: 1px solid rgba(255, 107, 0, 0.2);
-        padding: 40px 25px 35px 25px;
-        border-radius: 20px;
-        text-align: center;
-        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
-        margin-bottom: 30px;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .hero-banner::before {
+    /* Background Ambient Glow (Efeito Gamma) */
+    .stAppViewContainer::before {
         content: "";
-        position: absolute;
-        top: -50px;
-        right: -50px;
-        width: 150px;
-        height: 150px;
-        background: radial-gradient(circle, rgba(255, 107, 0, 0.35) 0%, rgba(0, 0, 0, 0) 70%);
-        border-radius: 50%;
+        position: fixed;
+        top: -150px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 600px;
+        height: 400px;
+        background: radial-gradient(circle, rgba(255, 107, 0, 0.18) 0%, rgba(255, 107, 0, 0) 70%);
+        pointer-events: none;
+        z-index: 0;
     }
 
-    .hero-badge {
-        display: inline-block;
-        background: rgba(255, 107, 0, 0.15);
-        color: #FF7B1C;
+    /* Header Estilo Gamma Card */
+    .gamma-hero {
+        background: rgba(22, 24, 33, 0.7);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 45px 30px;
+        border-radius: 24px;
+        text-align: center;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        margin-bottom: 35px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .gamma-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(255, 107, 0, 0.12);
+        color: #FF802C;
         border: 1px solid rgba(255, 107, 0, 0.3);
-        padding: 6px 16px;
-        border-radius: 30px;
+        padding: 6px 18px;
+        border-radius: 100px;
         font-size: 0.75rem;
         font-weight: 700;
-        letter-spacing: 1.5px;
+        letter-spacing: 1.8px;
         text-transform: uppercase;
-        margin-bottom: 12px;
+        margin-bottom: 16px;
     }
 
-    .hero-title {
+    .gamma-title {
         color: #FFFFFF !important;
         font-weight: 800 !important;
-        font-size: 2.3rem !important;
-        margin: 0 0 8px 0 !important;
-        letter-spacing: -0.5px;
-        line-height: 1.2;
+        font-size: 2.5rem !important;
+        margin: 0 0 10px 0 !important;
+        letter-spacing: -0.8px;
+        line-height: 1.15;
     }
 
-    .hero-title span {
-        background: linear-gradient(90deg, #FF6B00 0%, #FFA048 100%);
+    .gamma-title span {
+        background: linear-gradient(135deg, #FF6B00 0%, #FF9E44 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }
 
-    .hero-subtitle {
-        color: #9A9FAE !important;
-        font-size: 0.95rem !important;
-        font-weight: 500;
+    .gamma-subtitle {
+        color: #8C94A8 !important;
+        font-size: 0.9rem !important;
+        font-weight: 600;
         margin: 0 !important;
-        letter-spacing: 1px;
+        letter-spacing: 2px;
     }
 
+    /* Cartões de Mensagem estilo Gamma.app */
     .stChatMessage {
-        border-radius: 16px !important;
-        padding: 16px 20px !important;
-        margin-bottom: 16px !important;
-        font-family: 'Montserrat', sans-serif !important;
-        border: 1px solid #E8ECEF !important;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02) !important;
+        background: rgba(18, 20, 28, 0.6) !important;
+        backdrop-filter: blur(12px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.06) !important;
+        border-radius: 20px !important;
+        padding: 20px 24px !important;
+        margin-bottom: 20px !important;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2) !important;
+        color: #E6E8EC !important;
     }
 
+    /* Destaque para o Assistente */
     [data-testid="stChatMessage"]:nth-child(even) {
-        background-color: #FFFFFF !important;
-        border-left: 4px solid #FF6B00 !important;
+        border-left: 3px solid #FF6B00 !important;
+        background: rgba(24, 27, 38, 0.8) !important;
     }
 
+    /* Destaque para o Usuário */
     [data-testid="stChatMessage"]:nth-child(odd) {
-        background-color: #FAF2EC !important;
-        border-left: 4px solid #111319 !important;
+        border-left: 3px solid #3B4254 !important;
+        background: rgba(15, 17, 23, 0.5) !important;
     }
 
+    /* Botão estilo Gamma de Alta Conversão */
     .stDownloadButton button {
         width: 100% !important;
         background: linear-gradient(135deg, #FF6B00 0%, #FF8800 100%) !important;
         color: #FFFFFF !important;
         font-family: 'Montserrat', sans-serif !important;
         font-weight: 700 !important;
-        font-size: 1rem !important;
-        border-radius: 12px !important;
-        padding: 16px 24px !important;
+        font-size: 0.95rem !important;
+        border-radius: 14px !important;
+        padding: 18px 28px !important;
         border: none !important;
-        box-shadow: 0 8px 20px rgba(255, 107, 0, 0.3) !important;
-        transition: all 0.3s ease-in-out !important;
+        box-shadow: 0 10px 30px rgba(255, 107, 0, 0.35) !important;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
         cursor: pointer !important;
-        margin-top: 15px !important;
+        margin-top: 20px !important;
+        letter-spacing: 0.5px;
     }
 
     .stDownloadButton button:hover {
-        background: linear-gradient(135deg, #E05E00 0%, #FF7700 100%) !important;
-        transform: translateY(-2px) !important;
-        box-shadow: 0 12px 25px rgba(255, 107, 0, 0.45) !important;
+        transform: translateY(-2px) scale(1.01) !important;
+        box-shadow: 0 15px 35px rgba(255, 107, 0, 0.5) !important;
     }
 
+    /* Sidebar Dark Gamma */
     [data-testid="stSidebar"] {
-        background-color: #111319 !important;
-        color: #FFFFFF !important;
-        border-right: 1px solid rgba(255, 255, 255, 0.05);
+        background-color: #0E1017 !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.06) !important;
     }
 
     [data-testid="stSidebar"] * {
-        color: #E2E8F0 !important;
+        color: #A0A7B8 !important;
         font-family: 'Montserrat', sans-serif !important;
+    }
+
+    /* Barra de Digitação (Chat Input) estilo Gamma */
+    .stChatInputContainer {
+        background: transparent !important;
     }
 
     .stChatInputContainer textarea {
         font-family: 'Montserrat', sans-serif !important;
-        border-radius: 12px !important;
-        border: 1px solid #E0E6ED !important;
+        background-color: rgba(20, 23, 32, 0.9) !important;
+        color: #FFFFFF !important;
+        border-radius: 16px !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3) !important;
     }
 
     .stChatInputContainer textarea:focus {
         border-color: #FF6B00 !important;
-        box-shadow: 0 0 0 2px rgba(255, 107, 0, 0.2) !important;
+        box-shadow: 0 0 15px rgba(255, 107, 0, 0.3) !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# Renderização do Banner Superior
+# Renderização do Hero Card Estilo Gamma
 st.markdown("""
-    <div class="hero-banner">
-        <div class="hero-badge">Apresentações de Alto Impacto</div>
-        <h1 class="hero-title">7 MINUTOS <span>APRESENTAÇÃO</span></h1>
-        <p class="hero-subtitle">BY TATIANA MOREIRA</p>
+    <div class="gamma-hero">
+        <div class="gamma-badge">⚡ AI Presentation Builder</div>
+        <h1 class="gamma-title">7 MINUTOS <span>APRESENTAÇÃO</span></h1>
+        <p class="gamma-subtitle">BY TATIANA MOREIRA</p>
     </div>
 """, unsafe_allow_html=True)
 
-# Recupera a chave de API
+# Chave de API
 api_key = st.secrets.get("GEMINI_API_KEY", None)
 
 with st.sidebar:
-    st.markdown("### 🍊 Painel de Controle")
+    st.markdown("### 🍊 Controle & Configurações")
     if not api_key:
         api_key = st.text_input("Sua Gemini API Key:", type="password")
         st.caption("Obtenha sua chave no Google AI Studio.")
@@ -175,9 +199,9 @@ with st.sidebar:
     st.markdown("""
     **Metodologia Tatiana Moreira**
     
-    Transforme suas ideias e negócios em roteiros e slides altamente persuasivos para apresentações de 7 minutos.
+    Apresentações altamente persuasivas de **7 minutos** estruturadas em 8 etapas estratégicas.
     """)
-    st.caption("© Tatiana Moreira. Todos os direitos reservados.")
+    st.caption("© Tatiana Moreira — All rights reserved.")
 
 SYSTEM_PROMPT = """7 MINUTOS APRESENTAÇÃO — BY TATIANA MOREIRA
 
@@ -254,7 +278,7 @@ VERIFICAÇÃO FINAL
 Verifique compreensão, conexão, narrativa, tempo abaixo de 7 minutos, memória, sinais de indicação, pedido específico e visual que apoie a fala. Revise ortografia, legibilidade, alinhamentos e cortes. Corrija falhas.
 Prioridade: clareza -> conexão -> memória -> indicação."""
 
-def build_pptx_from_conversation(history):
+def build_pptx_from_conversation():
     prs = Presentation()
     prs.slide_width = Inches(13.333)
     prs.slide_height = Inches(7.5)
@@ -275,7 +299,7 @@ def build_pptx_from_conversation(history):
     p2 = tf.add_paragraph()
     p2.text = "Desenvolvido por Tatiana Moreira"
     p2.font.size = Pt(20)
-    p2.font.color.rgb = RGBColor(100, 100, 100)
+    p2.font.color.rgb = RGBColor(160, 160, 160)
     
     output = io.BytesIO()
     prs.save(output)
@@ -286,15 +310,8 @@ if not api_key:
     st.warning("Insira sua Gemini API Key para iniciar a ferramenta...")
     st.stop()
 
-genai.configure(api_key=api_key)
+client = genai.Client(api_key=api_key)
 
-model = genai.GenerativeModel(
-    model_name="models/gemini-1.5-flash",
-    system_instruction=SYSTEM_PROMPT
-)
-
-if "chat_session" not in st.session_state:
-    st.session_state.chat_session = model.start_chat(history=[])
 if "messages" not in st.session_state:
     st.session_state.messages = []
     initial_msg = "Olá! Seja bem-vindo(a).\n\nVamos construir a sua Apresentação de 7 Minutos perfeita para gerar indicações e fechar novos negócios.\n\nPara começar, conte-me sobre você e seu negócio (pode responder do seu jeito):\n1. Nome e Empresa\n2. O que a empresa faz e qual serviço/produto quer destacar\n3. Público ideal para este serviço\n4. Principal diferencial competitivo\n5. Case ou história relevante (opcional)"
@@ -311,14 +328,26 @@ if user_input := st.chat_input("Escreva sua resposta aqui..."):
 
     with st.chat_message("assistant"):
         with st.spinner("Analisando e gerando o próximo passo..."):
-            response = st.session_state.chat_session.send_message(user_input)
+            contents = []
+            for m in st.session_state.messages:
+                role = "user" if m["role"] == "user" else "model"
+                contents.append(types.Content(role=role, parts=[types.Part.from_text(text=m["content"])]))
+
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=contents,
+                config=types.GenerateContentConfig(
+                    system_instruction=SYSTEM_PROMPT
+                )
+            )
+            
             st.write(response.text)
             st.session_state.messages.append({"role": "assistant", "content": response.text})
 
             if "ETAPA 8" in response.text.upper() or "POWERPOINT" in response.text.upper():
-                pptx_data = build_pptx_from_conversation(st.session_state.messages)
+                pptx_data = build_pptx_from_conversation()
                 st.download_button(
-                    label="📥 BAIXAR SUA APRESENTAÇÃO EM POWERPOINT (.PPTX)",
+                    label="⚡ BAIXAR SUAS PRANCHAS EM POWERPOINT (.PPTX)",
                     data=pptx_data,
                     file_name="Apresentacao_7Minutos_TatianaMoreira.pptx",
                     mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
